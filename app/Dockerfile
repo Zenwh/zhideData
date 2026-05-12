@@ -17,6 +17,8 @@ RUN pnpm build
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+# Force IPv4-first DNS — some hosts (spare DigitalOcean) return AAAA but have no v6 route.
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 
 RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 
