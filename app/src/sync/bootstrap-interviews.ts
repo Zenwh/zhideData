@@ -17,7 +17,7 @@ async function main() {
   const r = await syncInterviewsByJobIds({
     mode: "bootstrap",
     jobIds: ids,
-    jobConcurrency: 2,
+    jobConcurrency: 1,
     detailConcurrency: 1,
   });
   logger.info({ r }, "bootstrap-interviews: done");
