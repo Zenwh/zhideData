@@ -200,8 +200,7 @@ export async function syncInterviewsByJobIds(opts: {
     meta: { totalJobIds: opts.jobIds.length },
   });
 
-  const jobLimit = pLimit(opts.jobConcurrency ?? 8);
-  const detailLimit = pLimit(opts.detailConcurrency ?? 4);
+  const detailLimit = pLimit(opts.detailConcurrency ?? 1);
   let fetched = 0;
   let upserted = 0;
   let jobsWithInterviews = 0;
@@ -209,27 +208,41 @@ export async function syncInterviewsByJobIds(opts: {
   let detailsFailed = 0;
   let listFailed = 0;
 
+  // Serial outer loop: StepFun stalls the first request of any concurrent batch
+  // on the same token, so we run jobs one-at-a-time. Details within a job can
+  // be parallel (detailLimit), since they share the keep-alive that's already warm.
   try {
-    await Promise.all(
-      opts.jobIds.map((jobId) =>
-        jobLimit(async () => {
-          try {
-            const r = await syncOneJobInterviews(jobId, detailLimit);
-            fetched += r.fetched;
-            upserted += r.upserted;
-            detailsFetched += r.detailsFetched;
-            detailsFailed += r.detailsFailed;
-            if (r.hasInterviews) jobsWithInterviews += 1;
-          } catch (err) {
-            listFailed += 1;
-            logger.warn(
-              { jobId, err: (err as Error).message },
-              "interview list fetch failed",
-            );
-          }
-        }),
-      ),
-    );
+    let processed = 0;
+    for (const jobId of opts.jobIds) {
+      try {
+        const r = await syncOneJobInterviews(jobId, detailLimit);
+        fetched += r.fetched;
+        upserted += r.upserted;
+        detailsFetched += r.detailsFetched;
+        detailsFailed += r.detailsFailed;
+        if (r.hasInterviews) jobsWithInterviews += 1;
+      } catch (err) {
+        listFailed += 1;
+        logger.warn(
+          { jobId, err: (err as Error).message },
+          "interview list fetch failed",
+        );
+      }
+      processed += 1;
+      if (processed % 50 === 0) {
+        logger.info(
+          {
+            processed,
+            total: opts.jobIds.length,
+            fetched,
+            upserted,
+            jobsWithInterviews,
+            listFailed,
+          },
+          "syncInterviews progress",
+        );
+      }
+    }
 
     await finishSyncLog({
       id: logId,

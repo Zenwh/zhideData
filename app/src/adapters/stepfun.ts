@@ -149,18 +149,22 @@ class StepFunError extends Error {
 }
 
 /**
- * Force IPv4 only — DO spare's v6 routing is broken, and undici's connect races
- * v4+v6 even with --dns-result-order=ipv4first; when v6 fails fast the whole
- * request fails. `family: 4` skips v6 entirely.
- * Keep-alive disabled because StepFun half-closes idle conns without notice.
+ * StepFun upstream stalls the first request of any concurrent batch on the same
+ * token (parallel-2 test: first call hangs 45s, second goes through fast).
+ * Approach: ONE connection, keep-alive on, serial requests at the orchestrator
+ * level. Sub-second per call once the conn is warm.
+ *
+ * Also force IPv4 — DO spare has broken v6 routing and undici's Happy Eyeballs
+ * fails fast on it without falling back.
  */
 const dispatcher = new Agent({
   connect: { timeout: 60_000, family: 4 },
-  pipelining: 0,
-  keepAliveTimeout: 1, // effectively no reuse
-  keepAliveMaxTimeout: 1,
-  headersTimeout: 120_000,
-  bodyTimeout: 120_000,
+  connections: 1,
+  pipelining: 1,
+  keepAliveTimeout: 30_000,
+  keepAliveMaxTimeout: 300_000,
+  headersTimeout: 60_000,
+  bodyTimeout: 60_000,
 });
 setGlobalDispatcher(dispatcher);
 
