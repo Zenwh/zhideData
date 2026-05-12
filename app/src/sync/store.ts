@@ -169,3 +169,16 @@ export async function listAllJobIds(): Promise<string[]> {
   const result = await db.execute(sql`SELECT id FROM jobs`);
   return result.rows.map((r) => (r as { id: string }).id);
 }
+
+/**
+ * Job IDs that have no interview row yet — used to make a full reconcile resumable.
+ */
+export async function listJobIdsWithoutInterviews(): Promise<string[]> {
+  const result = await db.execute(sql`
+    SELECT j.id FROM jobs j
+    LEFT JOIN interviews i ON i.job_id = j.id
+    WHERE i.id IS NULL
+    GROUP BY j.id
+  `);
+  return result.rows.map((r) => (r as { id: string }).id);
+}
