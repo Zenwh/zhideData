@@ -1,0 +1,37 @@
+{
+  "name": "zhide-data-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../.env src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "migrate": "tsx --env-file=../.env src/db/migrate.ts",
+    "sync:bootstrap": "tsx --env-file=../.env src/sync/bootstrap.ts",
+    "sync:smoke": "tsx --env-file=../.env src/sync/smoke.ts",
+    "sync:jobs": "tsx --env-file=../.env src/sync/run-jobs.ts",
+    "sync:interviews": "tsx --env-file=../.env src/sync/run-interviews.ts",
+    "sync:interviews-full": "tsx --env-file=../.env src/sync/run-interviews-full.ts"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^10.2.2",
+    "drizzle-orm": "^0.39.3",
+    "fastify": "^5.2.1",
+    "node-cron": "^3.0.3",
+    "p-limit": "^6.2.0",
+    "pg": "^8.13.1",
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.30.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
