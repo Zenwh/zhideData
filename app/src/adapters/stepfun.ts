@@ -183,13 +183,28 @@ async function postWorkflow<T>(
     }
     return body as T;
   } catch (err) {
+    const cause = (err as { cause?: { code?: string } })?.cause;
     const isAbort = (err as Error)?.name === "AbortError";
     const isServerErr =
       err instanceof StepFunError && err.status >= 500;
-    if (attempt < 2 && (isAbort || isServerErr)) {
-      const delay = 1000 * Math.pow(2, attempt);
+    const isTcpTransient =
+      cause?.code === "ETIMEDOUT" ||
+      cause?.code === "ECONNRESET" ||
+      cause?.code === "ECONNREFUSED" ||
+      cause?.code === "EAI_AGAIN" ||
+      cause?.code === "ENOTFOUND";
+    if (attempt < 3 && (isAbort || isServerErr || isTcpTransient)) {
+      // exponential backoff w/ jitter: 1.5s, 4s, 9s
+      const base = 1500 * Math.pow(2, attempt);
+      const delay = base + Math.random() * 500;
       logger.warn(
-        { endpoint, attempt, err: (err as Error).message },
+        {
+          endpoint,
+          attempt,
+          code: cause?.code,
+          err: (err as Error).message,
+          retryInMs: Math.round(delay),
+        },
         "stepfun retry",
       );
       await new Promise((r) => setTimeout(r, delay));
