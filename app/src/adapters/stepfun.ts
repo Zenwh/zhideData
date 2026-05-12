@@ -211,22 +211,26 @@ async function postWorkflow<T>(
       cause?.code === "ECONNREFUSED" ||
       cause?.code === "EAI_AGAIN" ||
       cause?.code === "ENOTFOUND";
-    if (attempt < 3 && (isAbort || isServerErr || isTcpTransient)) {
-      // exponential backoff w/ jitter: 1.5s, 4s, 9s
-      const base = 1500 * Math.pow(2, attempt);
-      const delay = base + Math.random() * 500;
+    // Only retry server errors (5xx) — not abort/transient, since StepFun is just slow,
+    // not flaky. Retrying a request that timed out at 30s usually just hits another 30s.
+    if (attempt < 1 && isServerErr) {
+      const delay = 2000;
       logger.warn(
         {
           endpoint,
           attempt,
-          code: cause?.code,
+          status: (err as StepFunError).status,
           err: (err as Error).message,
-          retryInMs: Math.round(delay),
+          retryInMs: delay,
         },
-        "stepfun retry",
+        "stepfun retry on 5xx",
       );
       await new Promise((r) => setTimeout(r, delay));
       return postWorkflow<T>(endpoint, input, attempt + 1);
+    }
+    // Tag abort/transient with structured fields so caller can decide
+    if (isAbort || isTcpTransient) {
+      (err as Error & { isTransient: boolean }).isTransient = true;
     }
     throw err;
   } finally {
