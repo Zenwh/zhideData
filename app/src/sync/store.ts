@@ -172,13 +172,15 @@ export async function listAllJobIds(): Promise<string[]> {
 
 /**
  * Job IDs that have no interview row yet — used to make a full reconcile resumable.
+ * Order: most-recently-updated first, since newer jobs are more likely to have interviews.
  */
 export async function listJobIdsWithoutInterviews(): Promise<string[]> {
   const result = await db.execute(sql`
     SELECT j.id FROM jobs j
     LEFT JOIN interviews i ON i.job_id = j.id
     WHERE i.id IS NULL
-    GROUP BY j.id
+    GROUP BY j.id, j.upstream_update_time
+    ORDER BY j.upstream_update_time DESC NULLS LAST, j.id
   `);
   return result.rows.map((r) => (r as { id: string }).id);
 }
