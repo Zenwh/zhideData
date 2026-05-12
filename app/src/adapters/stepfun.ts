@@ -1,3 +1,5 @@
+import { Agent, fetch as undiciFetch, setGlobalDispatcher } from "undici";
+
 import { env } from "@/lib/env.js";
 import { logger } from "@/lib/logger.js";
 
@@ -146,6 +148,23 @@ class StepFunError extends Error {
   }
 }
 
+/**
+ * Spare's network stack RST's parallel connect attempts to api.stepfun.com.
+ * Forcing one keep-alive connection per origin gives the bootstrap a fighting chance.
+ * Concurrency at the application layer (multiple in-flight requests) still works
+ * via HTTP/1.1 pipelining over the single connection.
+ */
+const dispatcher = new Agent({
+  connect: { timeout: 60_000 },
+  connections: 1,
+  pipelining: 6,
+  keepAliveTimeout: 60_000,
+  keepAliveMaxTimeout: 600_000,
+  headersTimeout: 90_000,
+  bodyTimeout: 90_000,
+});
+setGlobalDispatcher(dispatcher);
+
 async function postWorkflow<T>(
   endpoint: string,
   input: Record<string, unknown>,
@@ -156,7 +175,7 @@ async function postWorkflow<T>(
   const timeout = setTimeout(() => controller.abort(), env.SYNC_REQUEST_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, {
+    const res = await undiciFetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
