@@ -149,12 +149,13 @@ class StepFunError extends Error {
 }
 
 /**
- * Spare ↔ StepFun: keep-alive connection reuse causes fast ETIMEDOUTs because
- * the upstream half-closes idle connections without notifying us. Force a fresh
- * TCP per request — slower but reliable.
+ * Force IPv4 only — DO spare's v6 routing is broken, and undici's connect races
+ * v4+v6 even with --dns-result-order=ipv4first; when v6 fails fast the whole
+ * request fails. `family: 4` skips v6 entirely.
+ * Keep-alive disabled because StepFun half-closes idle conns without notice.
  */
 const dispatcher = new Agent({
-  connect: { timeout: 60_000 },
+  connect: { timeout: 60_000, family: 4 },
   pipelining: 0,
   keepAliveTimeout: 1, // effectively no reuse
   keepAliveMaxTimeout: 1,
