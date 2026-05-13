@@ -28,7 +28,7 @@ async function main() {
     city: string | null;
     position_type: string | null;
     recruitment_tag: string | null;
-    upstream_create_at: Date | null;
+    upstream_create_at: Date | string | null;
   }>;
   logger.info({ pending: rows.length }, "refill-content: starting");
 
@@ -55,7 +55,10 @@ async function main() {
               city: row.city ?? undefined,
               position_type: row.position_type ?? undefined,
               recruitment_tag: row.recruitment_tag ?? undefined,
-              create_at: row.upstream_create_at?.toISOString(),
+              create_at:
+                row.upstream_create_at instanceof Date
+                  ? row.upstream_create_at.toISOString()
+                  : (row.upstream_create_at ?? undefined),
             },
             detail,
             jobId: row.job_id,
