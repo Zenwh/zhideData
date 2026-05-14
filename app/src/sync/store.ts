@@ -152,8 +152,17 @@ export async function getLastSuccessfulWatermark(
     ORDER BY finished_at DESC
     LIMIT 1
   `);
-  const row = (result.rows[0] ?? null) as { watermark_after: Date | null } | null;
-  return row?.watermark_after ?? null;
+  // pg-driver returns timestamptz as Date OR string depending on parser setup
+  // (drizzle's db.execute() bypasses the type parsers in some cases). Normalize
+  // to Date here so callers can safely use .getTime() / .toISOString().
+  const row = (result.rows[0] ?? null) as {
+    watermark_after: Date | string | null;
+  } | null;
+  const raw = row?.watermark_after ?? null;
+  if (raw === null) return null;
+  if (raw instanceof Date) return raw;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 export async function listJobIdsUpdatedSince(since: Date): Promise<string[]> {
