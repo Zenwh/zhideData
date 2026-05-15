@@ -7,6 +7,7 @@ import { registerAuth } from "@/routes/auth.js";
 import { registerHealthRoutes } from "@/routes/health.js";
 import { registerInterviewRoutes } from "@/routes/interviews.js";
 import { registerJobRoutes } from "@/routes/jobs.js";
+import { registerMcpRoute } from "@/routes/mcp.js";
 import { startSchedulers } from "@/sync/scheduler.js";
 
 async function bootstrap() {
@@ -26,6 +27,7 @@ async function bootstrap() {
   registerHealthRoutes(app);
   registerJobRoutes(app);
   registerInterviewRoutes(app);
+  registerMcpRoute(app);
 
   await app.listen({ host: "0.0.0.0", port: env.API_PORT });
   logger.info({ port: env.API_PORT }, "api listening");

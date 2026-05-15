@@ -35,8 +35,10 @@ const InterviewsFacetsSchema = z.object({
  * position_query / job_id / company (to keep general "show me everything"
  * queries off the slow path). /facets has no such requirement — empty filters
  * just return the full catalog breakdown.
+ *
+ * Exported so the MCP tool layer can reuse it.
  */
-function buildInterviewsWhere(
+export function buildInterviewsWhere(
   f: Pick<
     InterviewsFilters,
     "position_query" | "job_id" | "company" | "recruitment_tag" | "city" | "position_type"

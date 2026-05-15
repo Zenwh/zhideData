@@ -42,8 +42,11 @@ const JobsFacetsSchema = z.object({
  * Build the WHERE clause shared by /jobs/search and /jobs/facets. Note the
  * facets endpoint typically wants the same filter set so users see counts of
  * what's available under their current refinement.
+ *
+ * Exported so the MCP tool layer can reuse it without duplicating the filter
+ * semantics.
  */
-function buildJobsWhere(
+export function buildJobsWhere(
   f: Pick<
     JobsFilters,
     | "query"
