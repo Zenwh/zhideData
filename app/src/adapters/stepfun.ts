@@ -215,19 +215,22 @@ async function postWorkflow<T>(
       cause?.code === "ECONNREFUSED" ||
       cause?.code === "EAI_AGAIN" ||
       cause?.code === "ENOTFOUND";
-    // Only retry server errors (5xx) — not abort/transient, since StepFun is just slow,
-    // not flaky. Retrying a request that timed out at 30s usually just hits another 30s.
-    if (attempt < 1 && isServerErr) {
-      const delay = 2000;
+    // Retry on 5xx (server error) AND on AbortError (our timeout fired). StepFun's
+    // interview_record_list has an empirical P50 of ~35s and a long tail past our
+    // timeout — retrying with a fresh request often succeeds because the slowness
+    // is per-request, not per-jobId. Cap at 1 retry to bound worst-case latency.
+    if (attempt < 1 && (isServerErr || isAbort)) {
+      const delay = isAbort ? 500 : 2000;
       logger.warn(
         {
           endpoint,
           attempt,
-          status: (err as StepFunError).status,
+          reason: isAbort ? "abort" : "5xx",
+          status: err instanceof StepFunError ? err.status : undefined,
           err: (err as Error).message,
           retryInMs: delay,
         },
-        "stepfun retry on 5xx",
+        "stepfun retry",
       );
       await new Promise((r) => setTimeout(r, delay));
       return postWorkflow<T>(endpoint, input, attempt + 1);
