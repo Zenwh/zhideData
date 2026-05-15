@@ -144,7 +144,7 @@ export function registerInterviewRoutes(app: FastifyInstance) {
     const whereClause = buildInterviewsWhere(f);
     const lim = f.limit;
 
-    const [total, positionTypes, cities, industries, recruitmentTags, companies] =
+    const [total, positionTypes, cities, recruitmentTags, companies] =
       await Promise.all([
         db.execute(sql`SELECT count(*)::int AS n FROM interviews WHERE ${whereClause}`),
         db.execute(sql`
@@ -156,11 +156,6 @@ export function registerInterviewRoutes(app: FastifyInstance) {
           SELECT city AS value, count(*)::int AS count
           FROM interviews WHERE ${whereClause} AND city IS NOT NULL
           GROUP BY city ORDER BY count DESC, value ASC LIMIT ${lim}
-        `),
-        db.execute(sql`
-          SELECT industry AS value, count(*)::int AS count
-          FROM interviews WHERE ${whereClause} AND industry IS NOT NULL
-          GROUP BY industry ORDER BY count DESC, value ASC LIMIT ${lim}
         `),
         db.execute(sql`
           SELECT recruitment_tag AS value, count(*)::int AS count
@@ -184,7 +179,7 @@ export function registerInterviewRoutes(app: FastifyInstance) {
         facets: {
           positionTypes: positionTypes.rows,
           cities: cities.rows,
-          industries: industries.rows,
+          // industry is never populated upstream for interviews — omitted.
           recruitmentTags: recruitmentTags.rows,
           companies: companies.rows,
         },
