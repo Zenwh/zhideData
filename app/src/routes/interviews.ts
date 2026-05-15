@@ -67,7 +67,7 @@ export function buildInterviewsWhere(
     conditions.push(sql`(city = ${f.city} OR ${f.city} = ANY(city_list))`);
   }
   if (f.position_type && f.position_type.length) {
-    conditions.push(sql`position_type = ANY(${f.position_type})`);
+    conditions.push(sql`position_type = ANY(${sql.param(f.position_type)})`);
   }
 
   return conditions.reduce(

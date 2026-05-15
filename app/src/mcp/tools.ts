@@ -396,7 +396,7 @@ const jobsBatchGetTool: ToolDef<{ ids: string[] }> = {
     return { ids: parseIds(obj.ids) };
   },
   handler: async ({ ids }) => {
-    const r = await db.execute(sql`SELECT * FROM jobs WHERE id = ANY(${ids})`);
+    const r = await db.execute(sql`SELECT * FROM jobs WHERE id = ANY(${sql.param(ids)})`);
     const byId = new Map<string, Record<string, unknown>>();
     for (const row of r.rows) {
       const id = (row as { id: string }).id;
@@ -490,7 +490,7 @@ const interviewsSearchTool: ToolDef<InterviewsSearchInput> = {
     });
     const where =
       jobIdFilter && jobIdFilter.length > 1
-        ? sql`${baseWhere} AND job_id = ANY(${jobIdFilter})`
+        ? sql`${baseWhere} AND job_id = ANY(${sql.param(jobIdFilter)})`
         : baseWhere;
 
     let orderClause = sql`upstream_create_at DESC NULLS LAST, id DESC`;
@@ -590,7 +590,7 @@ const interviewsBatchGetTool: ToolDef<{ ids: string[] }> = {
     return { ids: parseIds(obj.ids) };
   },
   handler: async ({ ids }) => {
-    const r = await db.execute(sql`SELECT * FROM interviews WHERE id = ANY(${ids})`);
+    const r = await db.execute(sql`SELECT * FROM interviews WHERE id = ANY(${sql.param(ids)})`);
     const byId = new Map<string, Record<string, unknown>>();
     for (const row of r.rows) {
       const id = (row as { id: string }).id;

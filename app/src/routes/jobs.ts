@@ -78,13 +78,15 @@ export function buildJobsWhere(
     conditions.push(sql`work_type = ${f.work_type}`);
   }
   if (f.industry && f.industry.length) {
-    conditions.push(sql`industry = ANY(${f.industry})`);
+    conditions.push(sql`industry = ANY(${sql.param(f.industry)})`);
   }
   if (f.position_type && f.position_type.length) {
-    conditions.push(sql`position_type = ANY(${f.position_type})`);
+    conditions.push(sql`position_type = ANY(${sql.param(f.position_type)})`);
   }
   if (f.city && f.city.length) {
-    conditions.push(sql`(city = ANY(${f.city}) OR city_list && ${f.city})`);
+    conditions.push(
+      sql`(city = ANY(${sql.param(f.city)}) OR city_list && ${sql.param(f.city)})`,
+    );
   }
   if (f.recommendation === "true") {
     conditions.push(sql`recommendation = true`);
